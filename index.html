@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bank Soal MPU — Engine Performance | Marlin Test System</title>
+<style>
+  :root{
+    --navy:#0a1628;--navy2:#0f2137;--card:#122b45;
+    --gold:#f5b301;--gold2:#ffd257;--teal:#00d1c1;
+    --green:#22c55e;--red:#ef4444;--txt:#e8f1fa;--muted:#9db4cc;
+    --line:rgba(245,179,1,.25);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'Segoe UI',Roboto,Arial,sans-serif;
+    background:
+      radial-gradient(circle at 15% 10%,rgba(0,209,193,.10),transparent 45%),
+      radial-gradient(circle at 85% 0%,rgba(245,179,1,.10),transparent 45%),
+      linear-gradient(160deg,#08111f 0%,#0a1628 40%,#0d1f33 100%);
+    color:var(--txt);min-height:100vh;padding-bottom:60px;
+  }
+
+  /* ===== NAVBAR ===== */
+  nav{
+    position:sticky;top:0;z-index:900;
+    background:rgba(10,22,40,.92);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border-bottom:2px solid var(--line);
+    box-shadow:0 6px 24px rgba(0,0,0,.45);
+  }
+  .nav-inner{max-width:1300px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:10px 18px;flex-wrap:wrap;}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;color:var(--gold);font-size:1rem;margin-right:auto;}
+  .brand .logo{width:42px;height:42px;flex:0 0 42px;border-radius:11px;background:linear-gradient(135deg,var(--gold),#ff8c00);display:grid;place-items:center;color:#0a1628;font-size:1.3rem;font-weight:900;box-shadow:0 0 18px rgba(245,179,1,.5);}
+  .brand small{display:block;font-size:.62rem;color:var(--muted);font-weight:600;letter-spacing:1.2px;}
+  .nav-links{display:flex;gap:4px;flex-wrap:wrap;}
+  .nav-links a{text-decoration:none;color:var(--txt);font-size:.78rem;font-weight:600;padding:8px 12px;border-radius:8px;border:1px solid transparent;transition:.25s;cursor:pointer;}
+  .nav-links a:hover{background:rgba(245,179,1,.14);border-color:var(--line);color:var(--gold2);transform:translateY(-2px);}
+  .nav-links a.active{background:linear-gradient(135deg,var(--gold),#ff9500);color:#0a1628;box-shadow:0 4px 14px rgba(245,179,1,.4);}
+
+  /* ===== HERO ===== */
+  header.hero{max-width:1300px;margin:0 auto;padding:46px 18px 22px;text-align:center;}
+  .badge{display:inline-block;padding:6px 16px;border-radius:999px;background:rgba(0,209,193,.13);border:1px solid rgba(0,209,193,.45);color:var(--teal);font-size:.72rem;font-weight:700;letter-spacing:1.6px;margin-bottom:14px;text-transform:uppercase;}
+  header.hero h1{font-size:clamp(1.6rem,4.4vw,2.7rem);line-height:1.15;font-weight:900;background:linear-gradient(100deg,#fff 10%,var(--gold2) 55%,var(--teal) 95%);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:12px;}
+  header.hero p{color:var(--muted);max-width:780px;margin:0 auto;font-size:.94rem;line-height:1.7;}
+  .credit{margin-top:16px;font-size:.8rem;color:var(--gold);font-weight:700;letter-spacing:.6px;}
+
+  /* ===== STATS BAR ===== */
+  .stats-bar{
+    max-width:1300px;margin:22px auto 0;padding:0 18px;
+    display:flex;gap:12px;flex-wrap:wrap;justify-content:center;
+  }
+  .stat-pill{
+    background:linear-gradient(150deg,var(--card),var(--navy2));
+    border:1px solid var(--line);border-radius:12px;
+    padding:12px 20px;display:flex;align-items:center;gap:12px;
+    min-width:150px;
+  }
+  .stat-pill .icon{font-size:1.3rem;}
+  .stat-pill .num{font-size:1.4rem;font-weight:900;color:var(--gold2);line-height:1;}
+  .stat-pill .label{font-size:.7rem;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;font-weight:700;margin-top:3px;}
+
+  /* ===== TOOLBAR ===== */
+  .toolbar{max-width:1300px;margin:24px auto 0;padding:0 18px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:center;}
+  .search-box{flex:1 1 280px;max-width:460px;position:relative;}
+  .search-box input{width:100%;padding:13px 16px 13px 44px;border-radius:12px;background:var(--card);border:1px solid rgba(255,255,255,.10);color:var(--txt);font-size:.9rem;outline:none;transition:.25s;}
+  .search-box input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(245,179,1,.15);}
+  .search-box::before{content:"🔍";position:absolute;left:15px;top:50%;transform:translateY(-50%);font-size:.95rem;opacity:.7;}
+  .mode-toggle{
+    background:var(--card);border:1px solid var(--line);
+    padding:11px 18px;border-radius:12px;font-size:.8rem;
+    color:var(--gold2);font-weight:700;cursor:pointer;transition:.25s;
+    display:flex;align-items:center;gap:8px;
+  }
+  .mode-toggle:hover{background:rgba(245,179,1,.12);transform:translateY(-2px);}
+  .mode-toggle.active{background:linear-gradient(135deg,var(--gold),#ff9500);color:#0a1628;border-color:var(--gold);}
+
+  /* ===== SECTION TITLE ===== */
+  .section-title{
+    max-width:1300px;margin:36px auto 18px;padding:0 18px;
+    display:flex;align-items:center;gap:12px;
+  }
+  .section-title .bar{width:5px;height:30px;border-radius:4px;background:linear-gradient(180deg,var(--gold),var(--teal));}
+  .section-title h2{font-size:1.2rem;font-weight:900;}
+  .section-title h2 small{display:block;font-size:.68rem;color:var(--muted);font-weight:600;letter-spacing:1.2px;text-transform:uppercase;margin-top:2px;}
+
+  /* ===== GRID ===== */
+  main{max-width:1300px;margin:0 auto;padding:0 18px;}
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));}
+  .q-card{
+    background:linear-gradient(150deg,var(--card),var(--navy2));
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:16px;padding:20px 18px 16px;cursor:pointer;
+    position:relative;overflow:hidden;transition:.3s cubic-bezier(.2,.8,.3,1);
+    display:flex;flex-direction:column;gap:10px;
+  }
+  .q-card::before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:linear-gradient(180deg,var(--gold),var(--teal));opacity:.85;transition:.3s;}
+  .q-card:hover{transform:translateY(-6px);border-color:var(--line);box-shadow:0 16px 38px rgba(0,0,0,.55),0 0 0 1px rgba(245,179,1,.18);}
+  .q-card:hover::before{width:6px;}
+  .q-card.answered::after{
+    content:"✓";position:absolute;top:14px;right:14px;
+    width:24px;height:24px;border-radius:50%;
+    background:var(--green);color:#fff;font-weight:900;font-size:.8rem;
+    display:grid;place-items:center;box-shadow:0 4px 12px rgba(34,197,94,.45);
+  }
+  .q-num{display:inline-flex;align-items:center;gap:8px;}
+  .q-num .badge-num{
+    width:32px;height:32px;border-radius:9px;
+    background:linear-gradient(135deg,rgba(245,179,1,.22),rgba(0,209,193,.18));
+    border:1px solid var(--line);color:var(--gold2);
+    font-weight:900;font-size:.82rem;
+    display:grid;place-items:center;
+  }
+  .q-num .cat{font-size:.66rem;letter-spacing:1.2px;text-transform:uppercase;color:var(--teal);font-weight:800;}
+  .q-card h3{font-size:.94rem;font-weight:700;line-height:1.45;color:#fff;}
+  .q-card .action{
+    margin-top:auto;font-size:.72rem;font-weight:800;letter-spacing:1.2px;
+    color:var(--gold);text-transform:uppercase;display:flex;align-items:center;gap:6px;
+    padding-top:8px;border-top:1px dashed rgba(255,255,255,.10);
+  }
+  .q-card .action span{transition:.25s;}
+  .q-card:hover .action span{transform:translateX(5px);}
+  .no-result{grid-column:1/-1;text-align:center;padding:50px 20px;color:var(--muted);font-size:.9rem;}
+
+  /* ===== MODAL ===== */
+  .overlay{
+    position:fixed;inset:0;z-index:2000;
+    background:rgba(3,8,16,.88);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    display:flex;align-items:center;justify-content:center;
+    padding:16px;opacity:0;pointer-events:none;transition:.3s;
+  }
+  .overlay.show{opacity:1;pointer-events:auto;}
+  .modal{
+    width:100%;max-width:820px;max-height:92vh;overflow-y:auto;
+    background:linear-gradient(160deg,#102942,#0a1a2c 65%);
+    border:1px solid var(--line);border-radius:20px;
+    box-shadow:0 30px 80px rgba(0,0,0,.75);
+    transform:translateY(24px) scale(.97);opacity:0;
+    transition:.35s cubic-bezier(.2,.8,.3,1);
+  }
+  .overlay.show .modal{transform:none;opacity:1;}
+  .modal::-webkit-scrollbar{width:8px;}
+  .modal::-webkit-scrollbar-track{background:#0a1a2c;}
+  .modal::-webkit-scrollbar-thumb{background:rgba(245,179,1,.4);border-radius:8px;}
+
+  .modal-head{
+    position:sticky;top:0;z-index:5;
+    background:linear-gradient(120deg,#12304e,#0d2135);
+    padding:18px 20px;border-bottom:1px solid var(--line);
+    display:flex;gap:12px;align-items:flex-start;
+  }
+  .modal-head .num{
+    width:46px;height:46px;flex:0 0 46px;border-radius:12px;
+    background:linear-gradient(135deg,var(--gold),#ff9500);
+    display:grid;place-items:center;font-weight:900;color:#0a1628;font-size:1rem;
+    box-shadow:0 6px 18px rgba(245,179,1,.4);
+  }
+  .modal-head .title-wrap{flex:1;}
+  .modal-head .cat-tag{font-size:.65rem;letter-spacing:1.4px;text-transform:uppercase;color:var(--teal);font-weight:800;margin-bottom:4px;}
+  .modal-head h3{font-size:1rem;line-height:1.45;font-weight:800;color:#fff;}
+  .close-btn{
+    background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);
+    color:var(--txt);width:38px;height:38px;flex:0 0 38px;border-radius:11px;
+    font-size:1.15rem;cursor:pointer;transition:.22s;
+  }
+  .close-btn:hover{background:#e33;border-color:#e33;transform:rotate(90deg);}
+
+  .modal-body{padding:22px 22px 26px;}
+
+  .question-box{
+    background:rgba(0,209,193,.06);
+    border-left:4px solid var(--teal);
+    border-radius:0 12px 12px 0;
+    padding:16px 18px;margin-bottom:18px;
+  }
+  .question-box .label{
+    font-size:.68rem;letter-spacing:1.6px;text-transform:uppercase;
+    color:var(--teal);font-weight:800;margin-bottom:8px;
+  }
+  .question-box p{font-size:1rem;line-height:1.7;color:#fff;font-weight:600;}
+
+  .reveal-area{
+    text-align:center;padding:22px 0;
+  }
+  .reveal-btn{
+    background:linear-gradient(135deg,var(--gold),#ff9500);
+    color:#0a1628;border:none;padding:14px 34px;border-radius:12px;
+    font-size:.92rem;font-weight:900;letter-spacing:.8px;cursor:pointer;
+    transition:.28s;box-shadow:0 8px 24px rgba(245,179,1,.4);
+    display:inline-flex;align-items:center;gap:10px;
+  }
+  .reveal-btn:hover{transform:translateY(-3px);box-shadow:0 12px 32px rgba(245,179,1,.55);}
+  .reveal-btn:active{transform:translateY(0);}
+  .reveal-hint{font-size:.78rem;color:var(--muted);margin-top:12px;font-style:italic;}
+
+  .answer-wrap{display:none;animation:fadeSlide .5s ease;}
+  .answer-wrap.show{display:block;}
+  @keyframes fadeSlide{
+    from{opacity:0;transform:translateY(14px);}
+    to{opacity:1;transform:none;}
+  }
+
+  .sec-label{
+    font-size:.68rem;letter-spacing:1.7px;text-transform:uppercase;
+    font-weight:900;color:var(--gold);margin-bottom:10px;
+    display:flex;align-items:center;gap:8px;margin-top:20px;
+  }
+  .sec-label::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent);}
+  .sec-label:first-child{margin-top:0;}
+
+  .answer-box{
+    background:rgba(34,197,94,.08);
+    border-left:4px solid var(--green);
+    border-radius:0 12px 12px 0;
+    padding:16px 18px;font-size:.94rem;line-height:1.8;color:#d1fae5;font-weight:500;
+  }
+  .detail-box{font-size:.87rem;line-height:1.9;color:#c6d8ea;}
+  .detail-box p{margin-bottom:10px;}
+  .detail-box ul{margin:0 0 10px 20px;line-height:1.95;}
+  .detail-box li{margin-bottom:5px;}
+  .detail-box b{color:var(--gold2);}
+  .detail-box .flow{
+    background:rgba(0,0,0,.3);border-radius:10px;padding:14px 16px;
+    font-family:'Consolas',monospace;font-size:.85rem;line-height:1.9;
+    color:var(--teal);border-left:3px solid var(--teal);margin:12px 0;
+  }
+
+  .formula-box{
+    background:rgba(0,0,0,.38);border:1px solid var(--line);
+    border-radius:12px;padding:16px 18px;margin-top:10px;
+    font-family:'Consolas',monospace;font-size:.95rem;
+    color:var(--gold2);line-height:2;white-space:pre-wrap;word-break:break-word;
+  }
+  .formula-box .note{
+    display:block;font-family:'Segoe UI',sans-serif;font-size:.76rem;
+    color:var(--muted);margin-top:8px;font-style:italic;
+  }
+
+  .link-grid{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-top:10px;}
+  .link-btn{
+    display:flex;align-items:center;gap:8px;text-decoration:none;
+    padding:10px 12px;border-radius:10px;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);
+    color:var(--txt);font-size:.76rem;font-weight:700;transition:.24s;
+  }
+  .link-btn .ic{font-size:1rem;}
+  .link-btn:hover{transform:translateY(-2px);border-color:var(--gold);background:rgba(245,179,1,.12);color:var(--gold2);}
+  .link-btn.lg:hover{border-color:#4285F4;background:rgba(66,133,244,.14);}
+  .link-btn.yt:hover{border-color:#FF0000;background:rgba(255,0,0,.14);}
+  .link-btn.pi:hover{border-color:#E60023;background:rgba(230,0,35,.14);}
+  .link-btn.wk:hover{border-color:#cfcfcf;background:rgba(255,255,255,.12);}
+
+  .modal-nav{
+    display:flex;gap:10px;justify-content:space-between;
+    margin-top:24px;padding-top:18px;border-top:1px solid rgba(255,255,255,.09);
+  }
+  .nav-arrow{
+    background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);
+    color:var(--txt);padding:11px 18px;border-radius:11px;
+    font-size:.8rem;font-weight:700;cursor:pointer;transition:.24s;
+    display:flex;align-items:center;gap:7px;
+  }
+  .nav-arrow:hover:not(:disabled){background:var(--gold);color:#0a1628;border-color:var(--gold);}
+  .nav-arrow:disabled{opacity:.3;cursor:not-allowed;}
+
+  footer{
+    max-width:1300px;margin:60px auto 0;padding:24px 18px 0;
+    border-top:1px solid rgba(255,255,255,.08);
+    text-align:center;color:var(--muted);font-size:.78rem;line-height:1.9;
+  }
+  footer b{color:var(--gold);}
+
+  @media(max-width:560px){
+    .nav-inner{padding:8px 10px;gap:6px;}
+    .brand{font-size:.84rem;}
+    .brand .logo{width:34px;height:34px;flex:0 0 34px;}
+    .nav-links a{padding:6px 9px;font-size:.7rem;}
+    .modal-head{padding:14px;}
+    .modal-head h3{font-size:.92rem;}
+    .modal-body{padding:16px 14px 20px;}
+    .question-box p{font-size:.92rem;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== NAVBAR ===== -->
+<nav>
+  <div class="nav-inner">
+    <div class="brand">
+      <div class="logo">📚</div>
+      <div>
+        BANK SOAL MPU
+        <small>ENGINE PERFORMANCE · MARLIN TEST</small>
+      </div>
+    </div>
+    <div class="nav-links" id="navLinks">
+      <a data-nav="hero" class="active">🏠 Beranda</a>
+      <a data-nav="soal">📘 Bank Soal</a>
+      <a data-nav="tentang">👨‍🏫 Tentang</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ===== HERO ===== -->
+<header class="hero" id="hero">
+  <div class="badge">Sistem Ujian Interaktif · Marlin Test</div>
+  <h1>Bank Soal MPU<br>Engine Performance</h1>
+  <p>Klik kartu soal untuk membuka <b>pertanyaan</b>. Jawaban <b>tersembunyi</b> hingga Anda menekan tombol <b>🔓 "Lihat Jawaban"</b>. Sistem ini melatih taruna untuk berpikir dulu sebelum membaca jawaban.</p>
+  <div class="credit">✦ Disusun oleh: RAFAEL SUKIRNO, CE. ✦</div>
+</header>
+
+<!-- ===== STATS ===== -->
+<div class="stats-bar">
+  <div class="stat-pill">
+    <div class="icon">📋</div>
+    <div>
+      <div class="num" id="statTotal">35</div>
+      <div class="label">Total Soal</div>
+    </div>
+  </div>
+  <div class="stat-pill">
+    <div class="icon">✅</div>
+    <div>
+      <div class="num" id="statAnswered">0</div>
+      <div class="label">Sudah Dibaca</div>
+    </div>
+  </div>
+  <div class="stat-pill">
+    <div class="icon">📊</div>
+    <div>
+      <div class="num" id="statProgress">0%</div>
+      <div class="label">Progress</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TOOLBAR ===== -->
+<div class="toolbar">
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Cari soal… (misal: BHP, torsi, efisiensi)">
+  </div>
+  <button class="mode-toggle" id="resetBtn">🔄 Reset Progress</button>
+</div>
+
+<!-- ===== SECTION TITLE ===== -->
+<div class="section-title" id="soal">
+  <div class="bar"></div>
+  <h2>Bank Soal MPU<small>A. Konsep Dasar · B. Power · C. Efisiensi · D. Torque &amp; RPM · E. Troubleshooting · F. Aliran Energi · G. Mesin Kalor · I. Perbandingan · J. Termodinamika · K. Ringkasan</small></h2>
+</div>
+
+<!-- ===== GRID ===== -->
+<main>
+  <div class="grid" id="grid"></div>
+</main>
+
+<!-- ===== ABOUT ===== -->
+<section style="max-width:1300px;margin:54px auto 0;padding:0 18px;" id="tentang">
+  <div style="background:linear-gradient(150deg,var(--card),var(--navy2));border:1px solid var(--line);border-radius:18px;padding:28px;display:flex;gap:22px;align-items:center;flex-wrap:wrap;">
+    <div style="width:100px;height:100px;flex:0 0 100px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#ff8c00);display:grid;place-items:center;font-size:2.2rem;font-weight:900;color:#0a1628;box-shadow:0 0 0 5px rgba(245,179,1,.16);">RS</div>
+    <div style="flex:1 1 280px;">
+      <h3 style="font-size:1.25rem;color:var(--gold2);margin-bottom:4px;font-weight:900;">RAFAEL SUKIRNO, CE.</h3>
+      <div style="font-size:.75rem;color:var(--teal);letter-spacing:1.4px;text-transform:uppercase;font-weight:800;margin-bottom:12px;">Marine Engineer · Content Author</div>
+      <p style="font-size:.87rem;color:var(--muted);line-height:1.8;">WebApp <b>Bank Soal MPU — Engine Performance</b> ini disusun dengan sistem <b>Marlin Test</b>: pertanyaan ditampilkan terlebih dahulu, jawaban tersembunyi hingga taruna siap membacanya. Metode ini melatih taruna Teknika dan ETO untuk berpikir kritis sebelum melihat jawaban.</p>
+      <p style="color:var(--gold);font-weight:800;letter-spacing:.5px;margin-top:10px;">✦ Dibuat oleh RAFAEL SUKIRNO, CE. ✦</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <b>BANK SOAL MPU — ENGINE PERFORMANCE</b><br>
+  Sistem Marlin Test · Media Pembelajaran Taruna Teknika &amp; ETO<br>
+  Dibuat oleh <b>RAFAEL SUKIRNO, CE.</b> © <span id="yr"></span>
+</footer>
+
+<!-- ===== MODAL ===== -->
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal">
+    <div class="modal-head">
+      <div class="num" id="mNum">1</div>
+      <div class="title-wrap">
+        <div class="cat-tag" id="mCat">KONSEP DASAR</div>
+        <h3 id="mTitle">Pertanyaan</h3>
+      </div>
+      <button class="close-btn" id="closeBtn" aria-label="Tutup">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="question-box">
+        <div class="label">❓ Pertanyaan</div>
+        <p id="mQuestion"></p>
+      </div>
+
+      <div class="reveal-area" id="revealArea">
+        <button class="reveal-btn" id="revealBtn">🔓 Lihat Jawaban</button>
+        <div class="reveal-hint">Pikirkan dulu jawabannya, baru klik tombol di atas.</div>
+      </div>
+
+      <div class="answer-wrap" id="answerWrap">
+        <div class="sec-label">✅ Jawaban</div>
+        <div class="answer-box" id="mAnswer"></div>
+
+        <div class="sec-label">📖 Penjelasan Detail</div>
+        <div class="detail-box" id="mDetail"></div>
+
+        <div id="mFormulaWrap" style="display:none">
+          <div class="sec-label">📐 Rumus &amp; Perhitungan</div>
+          <div class="formula-box" id="mFormula"></div>
+        </div>
+
+        <div class="sec-label">🔗 Referensi Gambar &amp; Video</div>
+        <div class="link-grid" id="mLinks"></div>
+      </div>
+
+      <div class="modal-nav">
+        <button class="nav-arrow" id="prevBtn">← Soal Sebelumnya</button>
+        <button class="nav-arrow" id="nextBtn">Soal Berikutnya →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   DATA BANK SOAL MPU — ENGINE PERFORMANCE
+   ============================================================ */
+const DATA = [
+  /* ===== A. KONSEP DASAR ENGINE PERFORMANCE ===== */
+  {
+    no:1, cat:"A. KONSEP DASAR",
+    q:"Apa yang dimaksud Engine Performance?",
+    a:"Engine Performance adalah kemampuan mesin menghasilkan tenaga dari energi bahan bakar.",
+    d:`<p><b>Engine Performance (unjuk kerja mesin)</b> adalah ukuran seberapa baik mesin mengubah energi kimia bahan bakar menjadi tenaga mekanik yang berguna.</p>
+    <p><b>Maksud nyata di kapal:</b> Engineer mengecek apakah mesin bekerja normal dan menghasilkan tenaga sesuai kebutuhan operasional.</p>
+    <p>Parameter utama Engine Performance:</p>
+    <ul>
+      <li><b>IHP</b> → tenaga di dalam silinder</li>
+      <li><b>BHP</b> → tenaga pada poros</li>
+      <li><b>FHP</b> → tenaga yang hilang</li>
+      <li><b>Torque</b> → gaya puntir poros</li>
+      <li><b>RPM</b> → kecepatan putaran</li>
+      <li><b>Efisiensi Mekanis</b> → persentase IHP menjadi BHP</li>
+    </ul>`,
+    f:"", k:"engine performance marine diesel engine"
+  },
+  {
+    no:2, cat:"A. KONSEP DASAR",
+    q:"Bagaimana bahan bakar dapat menghasilkan gerakan kapal?",
+    a:"Bahan bakar dibakar di dalam silinder → menghasilkan panas dan tekanan → mendorong piston → piston menggerakkan connecting rod → crankshaft berputar → poros memutar propeller → kapal bergerak.",
+    d:`<p>Ini adalah <b>rantai konversi energi</b> dari bahan bakar hingga kapal bergerak:</p>
+    <div class="flow">
+BAHAN BAKAR
+   ↓ (pembakaran)
+PANAS & TEKANAN
+   ↓ (mendorong piston)
+PISTON
+   ↓ (connecting rod)
+CRANKSHAFT
+   ↓ (berputar)
+POROS
+   ↓
+PROPELLER
+   ↓ (gaya dorong / thrust)
+KAPAL BERGERAK</div>
+    <p>Setiap tahap memiliki <b>kerugian energi</b> — tidak ada konversi yang 100% efisien. Karena itu efisiensi total mesin kapal hanya sekitar 25–50%.</p>`,
+    f:"", k:"marine diesel engine power flow fuel to propeller"
+  },
+  {
+    no:3, cat:"A. KONSEP DASAR",
+    q:"Apakah seluruh energi panas bahan bakar dapat menjadi tenaga gerak?",
+    a:"Tidak. Sebagian energi hilang melalui gas buang, sistem pendingin, radiasi, gesekan, dan kerugian mekanis lainnya.",
+    d:`<p>Energi bahan bakar <b>tidak seluruhnya</b> menjadi tenaga gerak. Berikut distribusi kerugian energi tipikal pada mesin diesel:</p>
+    <ul>
+      <li><b>Gas buang</b> → 25–35% (kerugian terbesar)</li>
+      <li><b>Sistem pendingin</b> → 15–25%</li>
+      <li><b>Gesekan & kerugian mekanis</b> → 5–10%</li>
+      <li><b>Radiasi</b> → 3–5%</li>
+      <li><b>Tenaga berguna (BHP)</b> → hanya 35–50%</li>
+    </ul>
+    <p>Karena itu, engineer selalu berusaha meningkatkan efisiensi dengan memanfaatkan gas buang (economizer, exhaust gas boiler) dan menjaga sistem pendingin tetap optimal.</p>`,
+    f:"", k:"diesel engine heat loss energy distribution"
+  },
+  {
+    no:4, cat:"A. KONSEP DASAR",
+    q:"Mengapa mesin tidak dapat mengubah seluruh energi bahan bakar menjadi kerja?",
+    a:"Karena selalu terdapat kerugian energi dan menurut Hukum II Termodinamika panas tidak dapat seluruhnya diubah menjadi kerja dalam satu siklus.",
+    d:`<p><b>Hukum II Termodinamika</b> menyatakan bahwa tidak mungkin mengubah seluruh panas menjadi kerja dalam satu siklus tertutup. Selalu ada sebagian panas yang harus dibuang ke lingkungan bersuhu lebih rendah.</p>
+    <p><b>Konsekuensi praktis:</b></p>
+    <ul>
+      <li>Mesin memerlukan <b>reservoir dingin</b> (pendingin, udara luar) untuk membuang panas</li>
+      <li>Efisiensi maksimum dibatasi oleh <b>efisiensi Carnot</b></li>
+      <li>Semakin besar perbedaan suhu T₁ (panas) dan T₂ (dingin), semakin tinggi efisiensi</li>
+    </ul>
+    <p><b>Rumus efisiensi Carnot:</b> η_carnot = 1 − (T₂/T₁) — batas teoretis efisiensi mesin kalor.</p>`,
+    f:`Efisiensi Carnot:
+η_carnot = 1 − (T₂ / T₁)
+
+T₁ = temperatur sumber panas (K)
+T₂ = temperatur reservoir dingin (K)
+
+Contoh: T₁ = 2.000 K, T₂ = 300 K
+η = 1 − (300/2.000) = 85%`,
+    k:"second law of thermodynamics carnot efficiency"
+  },
+  {
+    no:5, cat:"A. KONSEP DASAR",
+    q:"Apa yang dimaksud efisiensi mesin?",
+    a:"Efisiensi adalah perbandingan antara energi atau tenaga berguna yang dihasilkan dengan energi yang diberikan. Semakin tinggi efisiensi, semakin besar bagian energi bahan bakar yang dapat dimanfaatkan.",
+    d:`<p><b>Efisiensi</b> adalah rasio <i>output berguna</i> terhadap <i>input</i>, dinyatakan dalam persen.</p>
+    <p><b>Jenis efisiensi pada mesin:</b></p>
+    <ul>
+      <li><b>Efisiensi Mekanis (ηm)</b> → BHP/IHP × 100%</li>
+      <li><b>Efisiensi Termal (ηth)</b> → kerja berguna/energi bahan bakar</li>
+      <li><b>Efisiensi Volumetrik (ηv)</b> → volume udara aktual/teoretis</li>
+      <li><b>Efisiensi Total (ηt)</b> → kombinasi semua efisiensi</li>
+    </ul>
+    <p>Mesin diesel kapal modern memiliki efisiensi termal total <b>45–52%</b> — tertinggi di antara semua jenis mesin pembakaran.</p>`,
+    f:`Efisiensi umum:
+η = (output berguna / input) × 100%
+
+Efisiensi termal:
+η_th = W_netto / Q_input × 100%`,
+    k:"engine efficiency thermal mechanical marine"
+  },
+
+  /* ===== B. POWER PADA MESIN ===== */
+  {
+    no:6, cat:"B. POWER PADA MESIN",
+    q:"Apa yang dimaksud Indicated Power (IHP)?",
+    a:"IHP adalah tenaga yang dihasilkan oleh tekanan gas pembakaran di dalam silinder. IHP adalah tenaga sebelum dikurangi kerugian mekanis.",
+    d:`<p><b>Indicated Power (IHP)</b> adalah tenaga teoretis yang dihasilkan oleh tekanan gas pembakaran yang mendorong piston di dalam silinder.</p>
+    <p><b>Cara memperolehnya:</b></p>
+    <ul>
+      <li>Menggunakan <b>indicator diagram (P–V diagram)</b></li>
+      <li>Diukur dengan <b>engine indicator</b> — mekanis atau elektronik</li>
+      <li>Luas daerah di bawah kurva = kerja per siklus</li>
+      <li>Dikalikan dengan jumlah siklus per menit → IHP</li>
+    </ul>
+    <p><b>Maksud nyata:</b> IHP adalah tenaga dari proses pembakaran sebelum dikurangi kerugian mekanis. IHP selalu lebih besar dari BHP.</p>`,
+    f:`IHP = (Pmi × L × A × n × z) / 60.000
+
+Pmi = tekanan indikator rata-rata (kPa)
+L   = panjang langkah (m)
+A   = luas penampang silinder (m²)
+n   = putaran (rpm)
+z   = jumlah silinder`,
+    k:"indicated power indicator diagram diesel engine"
+  },
+  {
+    no:7, cat:"B. POWER PADA MESIN",
+    q:"Mengapa IHP biasanya lebih besar daripada BHP?",
+    a:"Karena sebagian tenaga digunakan untuk mengatasi gesekan piston, ring, bearing, crankshaft, pompa, dan komponen mesin lainnya.",
+    d:`<p>Tenaga yang dihasilkan di dalam silinder (IHP) harus "membayar" berbagai kerugian mekanis sebelum sampai ke poros output (BHP).</p>
+    <p><b>Sumber kerugian mekanis (FHP):</b></p>
+    <ul>
+      <li>Gesekan <b>piston – ring – liner</b> (terbesar)</li>
+      <li>Gesekan <b>bearing</b> poros engkol</li>
+      <li>Penggerakan <b>valve train</b></li>
+      <li>Penggerakan <b>pompa</b> (oli, air, bahan bakar)</li>
+      <li><b>Pumping loss</b> pada langkah hisap dan buang</li>
+      <li>Penggerakan <b>blower / turbocharger</b> mekanis</li>
+    </ul>
+    <p><b>Kesimpulan:</b> IHP = BHP + FHP. Karena FHP selalu positif, maka IHP > BHP.</p>`,
+    f:`IHP = BHP + FHP
+FHP = IHP − BHP
+
+Karena FHP > 0, maka:
+IHP > BHP`,
+    k:"engine friction losses mechanical IHP BHP"
+  },
+  {
+    no:8, cat:"B. POWER PADA MESIN",
+    q:"Apa yang dimaksud Brake Power (BHP)?",
+    a:"BHP adalah tenaga mekanik yang benar-benar tersedia pada poros mesin. Tenaga ini dapat digunakan untuk memutar propeller atau generator.",
+    d:`<p><b>Brake Power (BHP)</b> adalah tenaga keluaran (output) mesin yang diukur pada poros engkol atau flywheel.</p>
+    <p><b>Kenapa disebut "brake"?</b> Karena pengukuran tradisional menggunakan alat pengereman mekanis (<i>Prony Brake</i>). Sekarang diukur dengan <b>dynamometer</b>.</p>
+    <p><b>Kegunaan BHP:</b></p>
+    <ul>
+      <li>Memutar <b>propeller</b> kapal (mesin utama)</li>
+      <li>Memutar <b>generator</b> listrik (mesin bantu)</li>
+      <li>Menggerakkan pompa, kompresor, dan peralatan bantu</li>
+    </ul>
+    <p>Satuan: <b>kW</b> (SI) atau <b>HP</b> (1 HP ≈ 0,7457 kW).</p>`,
+    f:`BHP = (2π × n × T) / 60.000
+
+BHP = daya poros (kW)
+n   = putaran mesin (rpm)
+T   = torsi (N·m)`,
+    k:"brake power BHP dynamometer marine engine"
+  },
+  {
+    no:9, cat:"B. POWER PADA MESIN",
+    q:"Sebuah mesin berputar 500 rpm dengan torsi 10.000 N·m. Hitung BHP.",
+    a:"BHP = 523,3 kW. Jadi tenaga pada poros = 523,3 kW.",
+    d:`<p>Perhitungan langkah demi langkah:</p>
+    <ul>
+      <li>Diketahui: n = 500 rpm, T = 10.000 N·m, π = 3,14</li>
+      <li>Hitung: 2π × n = 2 × 3,14 × 500 = <b>3.140</b></li>
+      <li>Kalikan torsi: 3.140 × 10.000 = <b>31.400.000</b></li>
+      <li>Bagi 60.000: 31.400.000 / 60.000 = <b>523,3 kW</b></li>
+    </ul>
+    <p>Pembagi 60.000 berasal dari konversi rpm → rad/s (÷60) dan W → kW (÷1.000).</p>`,
+    f:`BHP = (2 × 3,14 × 500 × 10.000) / 60.000
+BHP = 31.400.000 / 60.000
+BHP = 523,3 kW`,
+    k:"brake power calculation example diesel engine"
+  },
+  {
+    no:10, cat:"B. POWER PADA MESIN",
+    q:"Apa yang dimaksud Friction Power (FHP)?",
+    a:"FHP adalah tenaga yang hilang untuk mengatasi gesekan dan kerugian mekanis mesin.",
+    d:`<p><b>Friction Power (FHP)</b> — juga disebut <i>Friction Horse Power</i> — adalah tenaga yang dipakai mesin untuk mengatasi hambatan internal.</p>
+    <p><b>Cara mengukur FHP:</b></p>
+    <ul>
+      <li><b>Motoring Test</b> → mesin diputar motor listrik tanpa pembakaran. Tenaga yang dibutuhkan = FHP.</li>
+      <li><b>Selisih</b> → FHP = IHP − BHP (cara paling umum)</li>
+      <li><b>Willan's Line</b> → metode grafik dari konsumsi bahan bakar vs BHP</li>
+    </ul>
+    <p>FHP meningkat seiring usia mesin, pelumasan buruk, atau kerusakan mekanis.</p>`,
+    f:`FHP = IHP − BHP
+
+Contoh:
+IHP = 600 kW
+BHP = 510 kW
+FHP = 600 − 510 = 90 kW`,
+    k:"friction power FHP motoring test engine"
+  },
+  {
+    no:11, cat:"B. POWER PADA MESIN",
+    q:"IHP = 600 kW dan BHP = 510 kW. Hitung FHP.",
+    a:"FHP = 90 kW. Artinya sekitar 90 kW digunakan untuk mengatasi kerugian mekanis.",
+    d:`<p>Perhitungan:</p>
+    <ul>
+      <li>Diketahui: IHP = 600 kW, BHP = 510 kW</li>
+      <li>Rumus: FHP = IHP − BHP</li>
+      <li>FHP = 600 − 510 = <b>90 kW</b></li>
+    </ul>
+    <p><b>Persentase:</b> 90/600 × 100% = <b>15%</b> dari IHP hilang sebagai kerugian mekanis. Ini masih dalam batas normal untuk mesin diesel kapal.</p>`,
+    f:`FHP = IHP − BHP
+FHP = 600 − 510
+FHP = 90 kW
+
+% FHP = (90 / 600) × 100% = 15%`,
+    k:"friction power calculation marine engine"
+  },
+  {
+    no:12, cat:"B. POWER PADA MESIN",
+    q:"Apa hubungan IHP, BHP dan FHP?",
+    a:"IHP = BHP + FHP. Artinya: IHP = tenaga di dalam silinder, FHP = tenaga yang hilang, BHP = tenaga yang tersedia pada poros.",
+    d:`<p>Ketiga parameter ini membentuk <b>neraca tenaga (power balance)</b> mesin:</p>
+    <ul>
+      <li><b>IHP</b> → total tenaga yang dihasilkan pembakaran</li>
+      <li><b>FHP</b> → tenaga yang hilang karena gesekan internal</li>
+      <li><b>BHP</b> → tenaga bersih di poros</li>
+    </ul>
+    <p><b>Analogi:</b> seperti gaji (IHP) yang dipotong pajak (FHP), sisanya baru bisa dibelanjakan (BHP).</p>
+    <p><b>Aplikasi diagnosa:</b></p>
+    <ul>
+      <li>BHP turun, IHP tetap → FHP naik → masalah mekanis</li>
+      <li>IHP turun, BHP turun → masalah pembakaran</li>
+    </ul>`,
+    f:`IHP = BHP + FHP
+
+Variasi:
+BHP = IHP − FHP
+FHP = IHP − BHP
+ηm  = BHP / IHP × 100%`,
+    k:"engine power balance IHP BHP FHP diagram"
+  },
+
+  /* ===== C. MECHANICAL EFFICIENCY ===== */
+  {
+    no:13, cat:"C. MECHANICAL EFFICIENCY",
+    q:"Apa yang dimaksud Mechanical Efficiency?",
+    a:"Mechanical Efficiency menunjukkan seberapa besar tenaga dari dalam silinder berhasil diteruskan menjadi tenaga poros.",
+    d:`<p><b>Mechanical Efficiency (ηm)</b> = perbandingan BHP dengan IHP, dinyatakan dalam persen.</p>
+    <p><b>Nilai normal:</b></p>
+    <ul>
+      <li>Mesin diesel 4-tak: <b>75–90%</b></li>
+      <li>Mesin diesel 2-tak crosshead: <b>85–92%</b></li>
+      <li>Mesin bensin: <b>70–85%</b></li>
+    </ul>
+    <p><b>Faktor yang mempengaruhi:</b> kualitas pelumas, kondisi bearing, temperatur kerja, rpm, dan umur mesin.</p>`,
+    f:`ηm = (BHP / IHP) × 100%
+
+ηm  = mechanical efficiency (%)
+BHP = brake power (kW)
+IHP = indicated power (kW)`,
+    k:"mechanical efficiency engine formula marine"
+  },
+  {
+    no:14, cat:"C. MECHANICAL EFFICIENCY",
+    q:"Jika IHP = 600 kW dan BHP = 510 kW, hitung Mechanical Efficiency.",
+    a:"ηm = 85%. Artinya sekitar 85% tenaga IHP berhasil menjadi tenaga poros.",
+    d:`<p>Perhitungan:</p>
+    <ul>
+      <li>ηm = (BHP / IHP) × 100%</li>
+      <li>ηm = (510 / 600) × 100%</li>
+      <li>510 / 600 = 0,85</li>
+      <li>0,85 × 100% = <b>85%</b></li>
+    </ul>
+    <p><b>Verifikasi:</b> FHP = 600 − 510 = 90 kW = 15%. Maka ηm = 100% − 15% = 85% ✓</p>`,
+    f:`ηm = (510 / 600) × 100%
+ηm = 0,85 × 100%
+ηm = 85%`,
+    k:"mechanical efficiency calculation example"
+  },
+  {
+    no:15, cat:"C. MECHANICAL EFFICIENCY",
+    q:"Sebuah mesin memiliki IHP = 800 kW dan BHP = 680 kW. Hitung FHP dan efisiensi mekanis.",
+    a:"FHP = 120 kW, Mechanical Efficiency = 85%.",
+    d:`<p><b>Langkah 1 — Hitung FHP:</b></p>
+    <ul>
+      <li>FHP = IHP − BHP = 800 − 680 = <b>120 kW</b></li>
+    </ul>
+    <p><b>Langkah 2 — Hitung Efisiensi Mekanis:</b></p>
+    <ul>
+      <li>ηm = (BHP / IHP) × 100%</li>
+      <li>ηm = (680 / 800) × 100% = <b>85%</b></li>
+    </ul>
+    <p><b>Verifikasi:</b> % FHP = 120/800 × 100% = 15%. Maka ηm = 85% ✓</p>`,
+    f:`FHP = 800 − 680 = 120 kW
+
+ηm = (680 / 800) × 100%
+ηm = 0,85 × 100%
+ηm = 85%`,
+    k:"mechanical efficiency FHP calculation marine"
+  },
+
+  /* ===== D. TORQUE DAN RPM ===== */
+  {
+    no:16, cat:"D. TORQUE & RPM",
+    q:"Apa yang dimaksud Torque (Torsi)?",
+    a:"Torsi adalah gaya puntir yang menyebabkan poros mesin berputar. Torsi menunjukkan kemampuan mesin memutar poros.",
+    d:`<p><b>Torque (torsi)</b> adalah momen gaya yang bekerja pada jarak dari titik pusat putaran. Dihasilkan oleh tekanan gas pembakaran yang mendorong piston → diteruskan connecting rod → memutar crankshaft.</p>
+    <p><b>Satuan:</b> N·m (Newton-meter) atau kg·m (1 kg·m ≈ 9,81 N·m)</p>
+    <p><b>Karakteristik torsi mesin diesel:</b></p>
+    <ul>
+      <li>Torsi maksimum pada putaran menengah</li>
+      <li>Torsi besar pada rpm rendah → cocok untuk beban berat</li>
+      <li>Mesin 2-tak besar: ratusan ribu N·m</li>
+    </ul>`,
+    f:`T = F × r
+
+T = torsi (N·m)
+F = gaya (N)
+r = lengan/jarak dari pusat (m)`,
+    k:"engine torque crankshaft marine diesel"
+  },
+  {
+    no:17, cat:"D. TORQUE & RPM",
+    q:"Bagaimana menghitung Torque jika Power dan RPM diketahui?",
+    a:"T = P × 60.000 / (2π × n). Contoh: P = 500 kW, n = 500 rpm → T ≈ 9.554 N·m.",
+    d:`<p>Ini adalah kebalikan dari rumus BHP. Jika daya dan rpm diketahui, torsi bisa dihitung.</p>
+    <p><b>Langkah perhitungan:</b></p>
+    <ul>
+      <li>Diketahui: P = 500 kW, n = 500 rpm, π = 3,14</li>
+      <li>Pembagi: 2π × n = 2 × 3,14 × 500 = <b>3.140</b></li>
+      <li>Pembilang: P × 60.000 = 500 × 60.000 = <b>30.000.000</b></li>
+      <li>Bagi: 30.000.000 / 3.140 = <b>9.554,14 N·m</b></li>
+    </ul>`,
+    f:`T = (P × 60.000) / (2π × n)
+
+T = (500 × 60.000) / (2 × 3,14 × 500)
+T = 30.000.000 / 3.140
+T ≈ 9.554 N·m`,
+    k:"torque calculation formula power rpm"
+  },
+  {
+    no:18, cat:"D. TORQUE & RPM",
+    q:"Apa hubungan Power, Torque dan RPM?",
+    a:"Power dipengaruhi oleh Torque dan RPM. Perubahan torsi atau putaran dapat menyebabkan perubahan power.",
+    d:`<p>Ketiga besaran ini saling terkait erat:</p>
+    <ul>
+      <li><b>Power (P)</b> = kemampuan melakukan kerja per satuan waktu</li>
+      <li><b>Torque (T)</b> = gaya puntir pada poros</li>
+      <li><b>RPM (n)</b> = kecepatan putaran poros</li>
+    </ul>
+    <p><b>Prinsip kunci:</b> Power = torsi × kecepatan sudut.</p>
+    <ul>
+      <li>Torsi naik, rpm tetap → power naik</li>
+      <li>RPM naik, torsi tetap → power naik</li>
+      <li>Power tetap, rpm naik → torsi turun</li>
+    </ul>
+    <p>Pada kurva performa mesin, torsi maksimum dan power maksimum terjadi pada rpm yang berbeda.</p>`,
+    f:`P = (2π × n × T) / 60.000
+
+Variasi:
+T = (P × 60.000) / (2π × n)
+n = (P × 60.000) / (2π × T)`,
+    k:"power torque rpm relation engine performance"
+  },
+  {
+    no:19, cat:"D. TORQUE & RPM",
+    q:"Mengapa RPM penting dalam pemeriksaan mesin kapal?",
+    a:"RPM menunjukkan kecepatan putaran mesin. RPM memengaruhi power, torque, beban mesin, konsumsi bahan bakar, dan kondisi operasi mesin.",
+    d:`<p><b>RPM</b> adalah indikator paling dasar dan paling cepat dibaca engineer.</p>
+    <p><b>Mengapa RPM penting?</b></p>
+    <ul>
+      <li><b>Menentukan power</b> → power ∝ rpm (pada torsi tetap)</li>
+      <li><b>Menunjukkan beban</b> → rpm turun pada fuel rack sama = beban naik</li>
+      <li><b>Indikator konsumsi BBM</b> → rpm naik = konsumsi naik</li>
+      <li><b>Indikator temperatur</b> → rpm tinggi = exhaust temp naik</li>
+      <li><b>Deteksi masalah</b> → rpm tidak stabil = masalah governor</li>
+    </ul>
+    <p><b>Alat ukur:</b> tachometer mekanis, magnetik, atau sensor elektronik pada flywheel.</p>`,
+    f:`P = (2π × n × T) / 60.000
+
+Jika T konstan:
+P ∝ n
+
+Contoh: rpm naik 2× → power naik 2×`,
+    k:"marine engine rpm tachometer monitoring"
+  },
+
+  /* ===== E. ANALISIS & TROUBLESHOOTING ===== */
+  {
+    no:20, cat:"E. ANALISIS & TROUBLESHOOTING",
+    q:"Apa yang terjadi jika IHP besar tetapi BHP kecil?",
+    a:"Kemungkinan terdapat kerugian mekanis yang besar. Contohnya gesekan piston/ring berlebihan, bearing bermasalah, crankshaft mengalami hambatan, pompa atau komponen bantu terlalu berat, atau komponen berputar mengalami gesekan.",
+    d:`<p>Kondisi ini berarti <b>efisiensi mekanis (ηm) rendah</b> — tenaga banyak "bocor" sebelum sampai poros.</p>
+    <p><b>Penyebab yang mungkin:</b></p>
+    <ul>
+      <li>Gesekan piston-ring-liner berlebihan</li>
+      <li>Bearing aus atau kendor (main, big end, crankpin)</li>
+      <li>Ring piston macet akibat karbon</li>
+      <li>Pelumasan tidak sesuai (viskositas, kontaminasi)</li>
+      <li>Pompa yang digerakkan mesin mengalami hambatan</li>
+      <li>Misalignment poros engkol</li>
+      <li>Valve clearance terlalu kencang</li>
+    </ul>
+    <p><b>Tindakan:</b> periksa tekanan oli, temperatur bearing, oil analysis, dan lakukan motoring test untuk mengukur FHP aktual.</p>`,
+    f:`ηm = (BHP / IHP) × 100%
+
+Contoh:
+IHP = 800 kW, BHP = 520 kW
+ηm = (520/800) × 100% = 65%  ← ABNORMAL
+(mestinya 75–90%)`,
+    k:"engine bearing wear friction damage diagnosis"
+  },
+  {
+    no:21, cat:"E. ANALISIS & TROUBLESHOOTING",
+    q:"Mengapa Engineer perlu mengetahui BHP?",
+    a:"Karena BHP menunjukkan tenaga nyata yang tersedia pada poros. Data BHP dapat digunakan untuk mengetahui kemampuan mesin menggerakkan propeller, generator, pompa, atau peralatan lainnya.",
+    d:`<p>BHP adalah <b>angka paling praktis</b> dalam operasional sehari-hari:</p>
+    <ul>
+      <li><b>Perencanaan beban</b> → batas aman pembebanan mesin</li>
+      <li><b>Perhitungan kecepatan kapal</b> → BHP berkaitan dengan kecepatan dan tahanan kapal</li>
+      <li><b>Pemilihan generator</b> → kapasitas ditentukan dari BHP mesin penggerak</li>
+      <li><b>Evaluasi konsumsi bahan bakar</b> → SFOC = g/kWh berdasarkan BHP</li>
+      <li><b>Pemantauan degradasi</b> → BHP turun pada rpm sama = ada masalah</li>
+      <li><b>Perencanaan overhaul</b> → perbandingan sebelum/sesudah</li>
+    </ul>`,
+    f:`SFOC = Konsumsi bahan bakar / BHP
+
+Contoh:
+Konsumsi = 1.000 kg/jam
+BHP = 5.000 kW
+SFOC = 1.000/5.000 = 0,2 kg/kWh
+     = 200 g/kWh`,
+    k:"shaft power BHP marine engine propeller"
+  },
+  {
+    no:22, cat:"E. ANALISIS & TROUBLESHOOTING",
+    q:"Bagaimana Engine Performance membantu Engineer mendeteksi kerusakan?",
+    a:"Engineer membandingkan data aktual dengan data normal mesin. RPM normal tetapi BHP turun → perlu pemeriksaan. FHP meningkat → kemungkinan kerugian mekanis meningkat. Konsumsi bahan bakar meningkat → periksa kondisi pembakaran dan mesin. Temperatur meningkat → periksa sistem pendingin atau kondisi operasi.",
+    d:`<p>Engine performance adalah <b>alat diagnosa dini</b>. Bandingkan data aktual dengan baseline (kapal baru / setelah overhaul).</p>
+    <p><b>Pola diagnosa umum:</b></p>
+    <ul>
+      <li><b>RPM normal, BHP turun</b> → masalah pembakaran (injector, bahan bakar, udara)</li>
+      <li><b>RPM normal, FHP naik</b> → masalah mekanis (bearing, ring, pelumasan)</li>
+      <li><b>RPM turun, fuel rack tetap</b> → beban bertambah (propeller fouling, arus)</li>
+      <li><b>Temperatur exhaust naik</b> → pembakaran tidak sempurna</li>
+      <li><b>Konsumsi bahan bakar naik</b> → efisiensi turun</li>
+      <li><b>Tekanan silinder turun</b> → kebocoran kompresi</li>
+      <li><b>Tekanan oli turun</b> → bearing mulai aus</li>
+      <li><b>Getaran meningkat</b> → misalignment atau unbalance</li>
+    </ul>`,
+    f:`Contoh diagnosa:
+
+Data normal:
+IHP=800 kW, BHP=680 kW, ηm=85%
+
+Data aktual:
+IHP=800 kW, BHP=560 kW
+ηm = (560/800)×100% = 70%
+
+Kesimpulan:
+FHP naik 120→240 kW
+→ Masalah mekanis, perlu overhaul`,
+    k:"engine performance diagnostic monitoring"
+  },
+  {
+    no:23, cat:"E. ANALISIS & TROUBLESHOOTING",
+    q:"Apa arti jika FHP semakin besar?",
+    a:"Artinya semakin banyak tenaga mesin yang hilang akibat gesekan atau kerugian mekanis. Engineer perlu mencari penyebabnya agar kerugian tidak semakin besar.",
+    d:`<p><b>FHP yang meningkat</b> adalah tanda peringatan dini. Semakin besar FHP, semakin kecil BHP yang tersedia untuk propeller.</p>
+    <p><b>Penyebab FHP meningkat:</b></p>
+    <ul>
+      <li>Keausan bearing (main, big end, crankpin)</li>
+      <li>Keausan ring piston dan liner</li>
+      <li>Pelumasan tidak optimal (viskositas salah, oli kotor)</li>
+      <li>Filter oli tersumbat</li>
+      <li>Pompa yang digerakkan mesin mulai berat</li>
+      <li>Valve clearance tidak tepat</li>
+      <li>Temperatur oli terlalu tinggi atau rendah</li>
+    </ul>
+    <p><b>Tindakan:</b> periksa oil analysis, temperatur bearing, tekanan oli, dan lakukan motoring test.</p>`,
+    f:`FHP = IHP − BHP
+
+Jika FHP naik dan IHP tetap:
+→ BHP turun
+→ ηm turun
+
+Contoh:
+FHP 90 kW → 150 kW (naik 67%)
+ηm turun dari 85% → 75%`,
+    k:"friction power increase engine wear diagnosis"
+  },
+
+  /* ===== F. ALIRAN TENAGA MESIN KAPAL ===== */
+  {
+    no:24, cat:"F. ALIRAN TENAGA",
+    q:"Jelaskan perjalanan energi bahan bakar sampai menjadi gerakan kapal.",
+    a:"BAHAN BAKAR → PEMBAKARAN → PANAS & TEKANAN → PISTON → CONNECTING ROD → CRANKSHAFT → BHP/TENAGA POROS → PROPELLER → DORONGAN → KAPAL BERGERAK.",
+    d:`<p><b>Diagram aliran tenaga lengkap:</b></p>
+    <div class="flow">
+BAHAN BAKAR
+     ↓
+PEMBAKARAN
+     ↓
+PANAS & TEKANAN
+     ↓
+PISTON (bergerak turun)
+     ↓
+CONNECTING ROD
+     ↓
+CRANKSHAFT (berputar)
+     ↓
+BHP / TENAGA POROS
+     ↓
+PROPELLER (berputar)
+     ↓
+DORONGAN / THRUST
+     ↓
+KAPAL BERGERAK</div>
+    <p>Setiap tahap memiliki kerugian energi. Efisiensi total hanya sekitar 25–50%.</p>`,
+    f:`Efisiensi total propulsi:
+η_total = η_mesin × η_shaft × η_prop
+
+η_mesin = 40–50%
+η_shaft = 97–98%
+η_prop  = 55–70%
+
+η_total = 0,45 × 0,975 × 0,65 ≈ 28%`,
+    k:"marine engine energy flow diagram fuel to propeller"
+  },
+  {
+    no:25, cat:"F. ALIRAN TENAGA",
+    q:"Jelaskan hubungan IHP → FHP → BHP secara sederhana.",
+    a:"Pembakaran menghasilkan tenaga di dalam silinder = IHP. Sebagian tenaga hilang karena gesekan dan kerugian mekanis = FHP. Sisa tenaga yang sampai ke poros = BHP. IHP = BHP + FHP.",
+    d:`<p><b>Neraca tenaga mesin:</b></p>
+    <div class="flow">
+PEMBAKARAN
+     ↓
+   IHP (100%)
+     ↓
+   −FHP (15%)
+     ↓
+   BHP (85%)</div>
+    <p><b>Analogi sederhana:</b></p>
+    <ul>
+      <li><b>IHP</b> = gaji kotor</li>
+      <li><b>FHP</b> = potongan pajak & biaya</li>
+      <li><b>BHP</b> = gaji bersih yang bisa dipakai</li>
+    </ul>
+    <p>Semakin tinggi efisiensi mekanis, semakin sedikit tenaga yang hilang sebagai FHP.</p>`,
+    f:`IHP = BHP + FHP
+
+ηm = (BHP/IHP) × 100%
+
+Semakin tinggi ηm:
+→ Semakin kecil FHP
+→ Semakin besar BHP`,
+    k:"engine power balance IHP FHP BHP diagram"
+  },
+
+  /* ===== G. KONSEP MESIN KALOR ===== */
+  {
+    no:26, cat:"G. MESIN KALOR",
+    q:"Apa yang dimaksud siklus mesin kalor?",
+    a:"Siklus mesin kalor adalah rangkaian proses yang mengubah energi panas menjadi kerja dan kemudian kembali ke kondisi awal sehingga proses dapat berulang.",
+    d:`<p><b>Siklus mesin kalor</b> adalah serangkaian proses termodinamika tertutup yang mengubah panas menjadi kerja, lalu kembali ke kondisi awal.</p>
+    <p><b>Siklus mesin kalor di kapal:</b></p>
+    <ul>
+      <li><b>Siklus Otto</b> → mesin bensin (4 langkah)</li>
+      <li><b>Siklus Diesel</b> → mesin diesel (compression ignition)</li>
+      <li><b>Siklus Rankine</b> → turbin uap</li>
+      <li><b>Siklus Brayton</b> → gas turbin</li>
+    </ul>
+    <p>Setiap siklus menerima panas (Q₁) dari sumber, menghasilkan kerja (W), dan membuang panas (Q₂) ke reservoir dingin.</p>`,
+    f:`Siklus Diesel:
+1→2: Kompresi adiabatik
+2→3: Pembakaran (P konstan)
+3→4: Ekspansi adiabatik
+4→1: Pembuangan panas (V konstan)
+
+η = 1 − (1/r^(γ−1)) × [(ρ^γ − 1)/(γ(ρ−1))]`,
+    k:"diesel cycle thermodynamics engine"
+  },
+  {
+    no:27, cat:"G. MESIN KALOR",
+    q:"Mengapa siklus mesin kalor harus berulang secara periodik?",
+    a:"Agar mesin dapat melakukan proses kerja secara terus-menerus. Setelah satu siklus selesai, kondisi kerja kembali ke keadaan awal dan siap melakukan siklus berikutnya.",
+    d:`<p>Mesin kalor bekerja secara <b>periodik</b> — siklus demi siklus — agar menghasilkan kerja kontinu.</p>
+    <p><b>Contoh siklus berulang pada mesin diesel 4-tak:</b></p>
+    <ul>
+      <li>Langkah Hisap → Langkah Kompresi → Langkah Usaha → Langkah Buang</li>
+      <li>Setelah langkah buang, piston kembali ke TMA dan siklus berikutnya dimulai</li>
+      <li>Pada 1.500 rpm, terjadi 750 siklus per menit per silinder</li>
+    </ul>
+    <p>Jika siklus tidak berulang, mesin tidak dapat menghasilkan tenaga secara berkelanjutan.</p>`,
+    f:`Frekuensi siklus:
+Mesin 4-tak: n/2 siklus per menit
+Mesin 2-tak: n siklus per menit
+
+Contoh: 1.500 rpm, 4-tak
+= 750 siklus/menit per silinder`,
+    k:"thermodynamic cycle diesel engine periodic"
+  },
+  {
+    no:28, cat:"G. MESIN KALOR",
+    q:"Sebuah siklus mesin kalor menerima Q1 = 1.200 kJ dan menghasilkan kerja W = 480 kJ. Hitung Q2.",
+    a:"Q2 = 720 kJ. Jadi panas yang dibuang = 720 kJ.",
+    d:`<p>Perhitungan menggunakan hukum pertama termodinamika:</p>
+    <ul>
+      <li>Diketahui: Q₁ = 1.200 kJ, W = 480 kJ</li>
+      <li>Rumus: Q₁ = W + Q₂</li>
+      <li>Q₂ = Q₁ − W = 1.200 − 480 = <b>720 kJ</b></li>
+    </ul>
+    <p><b>Interpretasi:</b> dari 1.200 kJ panas yang masuk, 480 kJ menjadi kerja berguna, dan 720 kJ dibuang ke lingkungan (gas buang, pendingin).</p>`,
+    f:`Q₁ = W + Q₂
+
+Q₂ = Q₁ − W
+Q₂ = 1.200 − 480
+Q₂ = 720 kJ`,
+    k:"thermodynamic first law heat work"
+  },
+  {
+    no:29, cat:"G. MESIN KALOR",
+    q:"Dari soal nomor 28, hitung efisiensi siklus.",
+    a:"η = 40%. Jadi efisiensi siklus = 40%.",
+    d:`<p>Perhitungan:</p>
+    <ul>
+      <li>Diketahui: W = 480 kJ, Q₁ = 1.200 kJ</li>
+      <li>Rumus: η = (W / Q₁) × 100%</li>
+      <li>η = (480 / 1.200) × 100%</li>
+      <li>480/1.200 = 0,40</li>
+      <li>0,40 × 100% = <b>40%</b></li>
+    </ul>
+    <p><b>Verifikasi:</b> Q₂ = 720 kJ. Efisiensi = 1 − Q₂/Q₁ = 1 − 720/1.200 = 1 − 0,6 = 0,40 = 40% ✓</p>`,
+    f:`η = (W / Q₁) × 100%
+η = (480 / 1.200) × 100%
+η = 0,40 × 100%
+η = 40%`,
+    k:"thermal efficiency calculation thermodynamic cycle"
+  },
+  {
+    no:30, cat:"G. MESIN KALOR",
+    q:"Mengapa efisiensi mesin kalor tidak dapat mencapai 100%?",
+    a:"Karena sebagian panas harus dibuang ke lingkungan dan terdapat berbagai kerugian energi. Menurut Hukum II Termodinamika, panas tidak dapat seluruhnya diubah menjadi kerja dalam satu siklus.",
+    d:`<p><b>Hukum II Termodinamika</b> membatasi efisiensi mesin kalor. Tidak mungkin mengubah seluruh panas menjadi kerja dalam satu siklus.</p>
+    <p><b>Alasan fundamental:</b></p>
+    <ul>
+      <li>Selalu ada <b>panas yang terbuang</b> (Q₂) ke reservoir dingin</li>
+      <li>Mesin memerlukan <b>perbedaan temperatur</b> untuk bekerja</li>
+      <li>Tidak ada proses yang <b>reversibel sempurna</b> di dunia nyata</li>
+      <li>Terdapat <b>kerugian gesekan, radiasi, dan konduksi</b></li>
+    </ul>
+    <p><b>Batas teoretis:</b> efisiensi Carnot η = 1 − (T₂/T₁). Bahkan mesin ideal pun tidak bisa mencapai 100%.</p>`,
+    f:`Efisiensi Carnot:
+η_carnot = 1 − (T₂/T₁)
+
+Contoh: T₁=2.000 K, T₂=300 K
+η_carnot = 1 − (300/2.000) = 85%
+
+Efisiensi aktual mesin diesel:
+η = 40–52% (jauh di bawah Carnot)`,
+    k:"second law thermodynamics carnot limit efficiency"
+  },
+  {
+    no:31, cat:"G. MESIN KALOR",
+    q:"Mesin A memiliki efisiensi 35% dan menerima Q1 = 600 kJ. Berapa kerja yang dihasilkan?",
+    a:"W = 210 kJ.",
+    d:`<p>Perhitungan:</p>
+    <ul>
+      <li>Diketahui: η = 35% = 0,35, Q₁ = 600 kJ</li>
+      <li>Rumus: W = η × Q₁</li>
+      <li>W = 0,35 × 600 = <b>210 kJ</b></li>
+    </ul>
+    <p>Panas yang dibuang: Q₂ = Q₁ − W = 600 − 210 = 390 kJ.</p>`,
+    f:`W = η × Q₁
+W = 0,35 × 600
+W = 210 kJ
+
+Q₂ = 600 − 210 = 390 kJ`,
+    k:"thermal efficiency work calculation"
+  },
+  {
+    no:32, cat:"G. MESIN KALOR",
+    q:"Mesin B memiliki efisiensi 50% dan menerima Q1 = 400 kJ. Berapa kerja yang dihasilkan?",
+    a:"W = 200 kJ. Mesin A menghasilkan 210 kJ, Mesin B 200 kJ. Mesin A menghasilkan kerja 10 kJ lebih besar karena menerima energi panas yang lebih besar.",
+    d:`<p>Perhitungan Mesin B:</p>
+    <ul>
+      <li>η = 50% = 0,50, Q₁ = 400 kJ</li>
+      <li>W = 0,50 × 400 = <b>200 kJ</b></li>
+    </ul>
+    <p><b>Perbandingan:</b></p>
+    <ul>
+      <li>Mesin A: η = 35%, Q₁ = 600 kJ → W = 210 kJ</li>
+      <li>Mesin B: η = 50%, Q₁ = 400 kJ → W = 200 kJ</li>
+    </ul>
+    <p><b>Pelajaran:</b> Meskipun Mesin B efisiensinya lebih tinggi, Mesin A menghasilkan kerja lebih besar karena menerima energi input lebih besar. <b>Kerja bergantung pada efisiensi DAN jumlah energi input.</b></p>`,
+    f:`Mesin A:
+W = 0,35 × 600 = 210 kJ
+Q₂ = 390 kJ
+
+Mesin B:
+W = 0,50 × 400 = 200 kJ
+Q₂ = 200 kJ
+
+Mesin A > Mesin B (210 > 200)`,
+    k:"thermal efficiency work comparison engines"
+  },
+
+  /* ===== I. CONTOH PERBANDINGAN KONSUMSI ENERGI ===== */
+  {
+    no:33, cat:"I. PERBANDINGAN ENERGI",
+    q:"Dua mesin mempunyai efisiensi berbeda. Jika menghasilkan kerja yang sama, mesin mana yang membutuhkan energi bahan bakar lebih besar? Contoh: Mesin A η = 40%, Mesin B η = 25%, target kerja = 400 kJ.",
+    a:"Untuk menghasilkan kerja yang sama, mesin dengan efisiensi lebih rendah membutuhkan energi input lebih besar.",
+    d:`<p>Perhitungan energi input yang dibutuhkan:</p>
+    <p><b>Mesin A (η = 40%):</b></p>
+    <ul>
+      <li>Q₁ = W / η = 400 / 0,40 = <b>1.000 kJ</b></li>
+    </ul>
+    <p><b>Mesin B (η = 25%):</b></p>
+    <ul>
+      <li>Q₁ = W / η = 400 / 0,25 = <b>1.600 kJ</b></li>
+    </ul>
+    <p><b>Kesimpulan:</b> Mesin B membutuhkan <b>600 kJ lebih banyak</b> (60% lebih banyak) energi bahan bakar untuk menghasilkan kerja yang sama.</p>
+    <p><b>Implikasi di kapal:</b> mesin dengan efisiensi rendah = konsumsi bahan bakar tinggi = biaya operasional lebih besar. Karena itu engine performance monitoring sangat penting.</p>`,
+    f:`Q₁ = W / η
+
+Mesin A:
+Q₁ = 400 / 0,40 = 1.000 kJ
+
+Mesin B:
+Q₁ = 400 / 0,25 = 1.600 kJ
+
+Selisih: 600 kJ (60% lebih boros)`,
+    k:"engine efficiency fuel consumption comparison"
+  },
+
+  /* ===== J. TIGA PROSES TERMODINAMIKA ===== */
+  {
+    no:34, cat:"J. TERMODINAMIKA",
+    q:"Sebutkan tiga proses termodinamika dan contoh penerapannya.",
+    a:"Isentropik (kompresi ideal), Isobarik (tekanan konstan), dan Isokhorik (volume tetap).",
+    d:`<p><b>1. ISENTROPIK</b> — proses ideal tanpa perpindahan panas (adiabatik + reversibel).</p>
+    <ul>
+      <li><b>Contoh:</b> proses kompresi ideal pada compressor/turbocharger, ekspansi ideal pada turbin</li>
+      <li>Entropi konstan, tidak ada panas masuk/keluar</li>
+    </ul>
+    <p><b>2. ISOBARIK</b> — proses pada tekanan relatif konstan.</p>
+    <ul>
+      <li><b>Contoh:</b> proses tertentu pada sistem pembakaran atau pemanasan yang dimodelkan pada tekanan konstan</li>
+      <li>Pada diagram P-V, garis horizontal</li>
+    </ul>
+    <p><b>3. ISOKHORIK</b> — proses pada volume tetap.</p>
+    <ul>
+      <li><b>Contoh:</b> proses pemanasan fluida dalam ruang tertutup dengan volume tetap, seperti pembakaran pada siklus Otto</li>
+      <li>Pada diagram P-V, garis vertikal</li>
+    </ul>
+    <p><b>Proses lainnya:</b> Isotermal (suhu konstan) dan Politropik (proses umum).</p>`,
+    f:`Hukum-hukum proses:
+
+Isentropik: PV^γ = konstan, Q = 0
+Isobarik:   P = konstan, Q = m·cp·ΔT
+Isokhorik:  V = konstan, Q = m·cv·ΔT
+
+γ = cp/cv (rasio panas spesifik)`,
+    k:"thermodynamic processes isentropic isobaric isochoric"
+  },
+
+  /* ===== K. RINGKASAN BESAR ===== */
+  {
+    no:35, cat:"K. RINGKASAN BESAR",
+    q:"Jelaskan semua parameter Engine Performance dalam satu rangkaian.",
+    a:"BAHAN BAKAR → PEMBAKARAN → TEKANAN SILINDER → IHP → FHP → BHP → TORQUE → RPM → POROS → PROPELLER → KAPAL BERGERAK.",
+    d:`<p><b>Rangkaian lengkap Engine Performance:</b></p>
+    <div class="flow">
+BAHAN BAKAR
+   ↓
+PEMBAKARAN
+   ↓
+TEKANAN SILINDER
+   ↓
+IHP (tenaga di silinder)
+   ↓ (−FHP)
+BHP (tenaga poros)
+   ↓
+TORQUE (gaya puntir)
+   ↓
+RPM (kecepatan putar)
+   ↓
+POROS
+   ↓
+PROPELLER
+   ↓
+KAPAL BERGERAK</div>
+    <p><b>Kunci pemahaman taruna:</b></p>
+    <ul>
+      <li><b>IHP</b> = tenaga di dalam silinder</li>
+      <li><b>FHP</b> = tenaga yang hilang</li>
+      <li><b>BHP</b> = tenaga di poros</li>
+      <li><b>Torque</b> = gaya puntir</li>
+      <li><b>RPM</b> = kecepatan putar</li>
+      <li><b>ηm</b> = efisiensi mekanis</li>
+    </ul>
+    <p><b>Maksud nyata di kapal:</b> bahan bakar dibakar → menghasilkan tekanan → piston bergerak → crankshaft berputar → menghasilkan BHP → poros memutar propeller → propeller menghasilkan thrust → kapal bergerak.</p>`,
+    f:`RUMUS UTAMA MPU:
+
+BHP = (2π × n × T) / 60.000
+FHP = IHP − BHP
+ηm  = BHP / IHP × 100%
+T   = P × 60.000 / (2π × n)
+IHP = BHP + FHP
+η   = W / Q₁ × 100%
+Q₂  = Q₁ − W`,
+    k:"engine performance summary marine diesel parameters"
+  }
+];
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let answeredSet = new Set();
+try {
+  const saved = localStorage.getItem('mpuAnswered');
+  if(saved) answeredSet = new Set(JSON.parse(saved));
+} catch(e){}
+
+let currentIndex = 0;
+
+/* ============================================================
+   RENDER KARTU
+   ============================================================ */
+const grid = document.getElementById('grid');
+const statTotal = document.getElementById('statTotal');
+const statAnswered = document.getElementById('statAnswered');
+const statProgress = document.getElementById('statProgress');
+
+function updateStats(){
+  statTotal.textContent = DATA.length;
+  statAnswered.textContent = answeredSet.size;
+  const pct = Math.round((answeredSet.size / DATA.length) * 100);
+  statProgress.textContent = pct + '%';
+}
+
+function renderCards(filter = ""){
+  const q = filter.trim().toLowerCase();
+  const list = DATA.filter(item => {
+    if(!q) return true;
+    return item.q.toLowerCase().includes(q) ||
+           item.a.toLowerCase().includes(q) ||
+           item.cat.toLowerCase().includes(q) ||
+           String(item.no).includes(q) ||
+           item.k.toLowerCase().includes(q);
+  });
+
+  if(list.length === 0){
+    grid.innerHTML = `<div class="no-result">😕 Tidak ada soal yang cocok dengan pencarian "<b>${filter}</b>"</div>`;
+    return;
+  }
+
+  grid.innerHTML = list.map(item => `
+    <article class="q-card ${answeredSet.has(item.no) ? 'answered' : ''}" data-no="${item.no}" tabindex="0" role="button">
+      <div class="q-num">
+        <div class="badge-num">${item.no}</div>
+        <div class="cat">${item.cat}</div>
+      </div>
+      <h3>${item.q}</h3>
+      <div class="action">🔓 Buka &amp; Lihat Jawaban <span>→</span></div>
+    </article>
+  `).join('');
+
+  grid.querySelectorAll('.q-card').forEach(card => {
+    const no = parseInt(card.dataset.no, 10);
+    card.addEventListener('click', () => openModal(no));
+    card.addEventListener('keydown', e => {
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openModal(no); }
+    });
+  });
+}
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+const overlay = document.getElementById('overlay');
+const mNum = document.getElementById('mNum');
+const mCat = document.getElementById('mCat');
+const mTitle = document.getElementById('mTitle');
+const mQuestion = document.getElementById('mQuestion');
+const mAnswer = document.getElementById('mAnswer');
+const mDetail = document.getElementById('mDetail');
+const mFormula = document.getElementById('mFormula');
+const mFormulaWrap = document.getElementById('mFormulaWrap');
+const mLinks = document.getElementById('mLinks');
+const revealArea = document.getElementById('revealArea');
+const revealBtn = document.getElementById('revealBtn');
+const answerWrap = document.getElementById('answerWrap');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const closeBtn = document.getElementById('closeBtn');
+
+function buildLinks(keyword){
+  const k = encodeURIComponent(keyword);
+  return `
+    <a class="link-btn lg" target="_blank" rel="noopener" href="https://www.google.com/search?q=${k}"><span class="ic">🔍</span> Google</a>
+    <a class="link-btn lg" target="_blank" rel="noopener" href="https://www.google.com/search?tbm=isch&q=${k}"><span class="ic">🖼️</span> Images</a>
+    <a class="link-btn yt" target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query=${k}"><span class="ic">▶️</span> YouTube</a>
+    <a class="link-btn pi" target="_blank" rel="noopener" href="https://id.pinterest.com/search/pins/?q=${k}"><span class="ic">📌</span> Pinterest</a>
+    <a class="link-btn wk" target="_blank" rel="noopener" href="https://id.wikipedia.org/w/index.php?search=${k}"><span class="ic">📚</span> Wikipedia</a>
+    <a class="link-btn" target="_blank" rel="noopener" href="https://www.google.com/search?tbm=isch&q=${k}+diagram"><span class="ic">📊</span> Diagram</a>
+  `;
+}
+
+function openModal(no){
+  const idx = DATA.findIndex(d => d.no === no);
+  if(idx < 0) return;
+  currentIndex = idx;
+  const item = DATA[idx];
+
+  mNum.textContent = item.no;
+  mCat.textContent = item.cat;
+  mTitle.textContent = `Soal ${item.no}`;
+  mQuestion.textContent = item.q;
+  mAnswer.innerHTML = item.a;
+  mDetail.innerHTML = item.d;
+
+  if(item.f && item.f.trim() !== ""){
+    mFormulaWrap.style.display = 'block';
+    mFormula.textContent = item.f;
+  } else {
+    mFormulaWrap.style.display = 'none';
+  }
+
+  mLinks.innerHTML = buildLinks(item.k);
+
+  // Reset reveal state
+  answerWrap.classList.remove('show');
+  revealArea.style.display = 'block';
+  revealBtn.innerHTML = '🔓 Lihat Jawaban';
+
+  // Nav
+  prevBtn.disabled = (currentIndex === 0);
+  nextBtn.disabled = (currentIndex === DATA.length - 1);
+  prevBtn.innerHTML = currentIndex > 0 ? `← Soal ${DATA[currentIndex-1].no}` : '← Soal Sebelumnya';
+  nextBtn.innerHTML = currentIndex < DATA.length-1 ? `Soal ${DATA[currentIndex+1].no} →` : 'Soal Berikutnya →';
+
+  overlay.classList.add('show');
+  document.body.style.overflow = 'hidden';
+  document.getElementById('modal').scrollTop = 0;
+}
+
+function closeModal(){
+  overlay.classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+// Reveal answer
+revealBtn.addEventListener('click', () => {
+  const item = DATA[currentIndex];
+  answeredSet.add(item.no);
+  try {
+    localStorage.setItem('mpuAnswered', JSON.stringify([...answeredSet]));
+  } catch(e){}
+  updateStats();
+
+  revealArea.style.display = 'none';
+  answerWrap.classList.add('show');
+
+  // Refresh grid marker
+  const currentCard = document.querySelector(`.q-card[data-no="${item.no}"]`);
+  if(currentCard) currentCard.classList.add('answered');
+});
+
+closeBtn.addEventListener('click', closeModal);
+overlay.addEventListener('click', e => { if(e.target === overlay) closeModal(); });
+document.addEventListener('keydown', e => {
+  if(!overlay.classList.contains('show')) return;
+  if(e.key === 'Escape') closeModal();
+  if(e.key === 'ArrowLeft' && !prevBtn.disabled) openModal(DATA[currentIndex-1].no);
+  if(e.key === 'ArrowRight' && !nextBtn.disabled) openModal(DATA[currentIndex+1].no);
+});
+
+prevBtn.addEventListener('click', () => { if(currentIndex > 0) openModal(DATA[currentIndex-1].no); });
+nextBtn.addEventListener('click', () => { if(currentIndex < DATA.length-1) openModal(DATA[currentIndex+1].no); });
+
+/* ============================================================
+   SEARCH
+   ============================================================ */
+document.getElementById('searchInput').addEventListener('input', e => {
+  renderCards(e.target.value);
+});
+
+/* ============================================================
+   RESET PROGRESS
+   ============================================================ */
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if(confirm('Reset semua progress jawaban yang sudah dibaca?')){
+    answeredSet.clear();
+    try { localStorage.removeItem('mpuAnswered'); } catch(e){}
+    updateStats();
+    renderCards(document.getElementById('searchInput').value);
+  }
+});
+
+/* ============================================================
+   NAVBAR
+   ============================================================ */
+document.querySelectorAll('#navLinks a').forEach(link => {
+  link.addEventListener('click', () => {
+    const target = link.dataset.nav;
+    document.querySelectorAll('#navLinks a').forEach(a => a.classList.remove('active'));
+    link.classList.add('active');
+    if(target === 'hero'){
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      const el = document.getElementById(target);
+      if(el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+});
+
+/* ============================================================
+   INIT
+   ============================================================ */
+document.getElementById('yr').textContent = new Date().getFullYear();
+updateStats();
+renderCards();
+</script>
+</body>
+</html>
